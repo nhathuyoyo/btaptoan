@@ -1,63 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Graph Editor Auto</title>
+  <title>Graph Visualizer</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
-    body { font-family: Arial; }
     #mynetwork {
       width: 100%;
       height: 500px;
-      border: 1px solid gray;
-      margin-top: 10px;
+      border: 1px solid lightgray;
     }
   </style>
 </head>
-
 <body>
 
-<h2>Graph Editor (không cần nhập tọa độ)</h2>
+<h2>Nhập đồ thị</h2>
 
-<p>Nhập cạnh (u v w):</p>
-<textarea id="input" rows="6" cols="40">
-1 2 4
-1 3 2
-2 4 5
-3 4 1
-</textarea>
+<textarea id="input" rows="5" cols="40">
+1 2
+2 3
+3 4
+1 4
+</textarea><br><br>
 
-<br><br>
 <button onclick="drawGraph()">Vẽ đồ thị</button>
-<button onclick="lockGraph()">Khóa vị trí</button>
 
 <div id="mynetwork"></div>
 
 <script>
-let network;
-
 function drawGraph() {
-    let lines = document.getElementById("input").value.trim().split("\n");
+    let input = document.getElementById("input").value.trim().split("\n");
 
     let nodesSet = new Set();
     let edges = [];
 
-    lines.forEach(line => {
-        let [u, v, w] = line.split(" ").map(Number);
+    input.forEach(line => {
+        let [u, v] = line.split(" ").map(Number);
         nodesSet.add(u);
         nodesSet.add(v);
-
-        edges.push({
-            from: u,
-            to: v,
-            label: w.toString()
-        });
+        edges.push({ from: u, to: v });
     });
 
-    let nodes = Array.from(nodesSet).map(x => ({
-        id: x,
-        label: x.toString()
-    }));
+    let nodes = Array.from(nodesSet).map(x => ({ id: x, label: x.toString() }));
 
     let container = document.getElementById("mynetwork");
 
@@ -67,18 +50,15 @@ function drawGraph() {
     };
 
     let options = {
+        edges: {
+            arrows: "to"
+        },
         physics: {
             enabled: true
         }
     };
 
-    network = new vis.Network(container, data, options);
-}
-
-function lockGraph() {
-    network.setOptions({
-        physics: false
-    });
+    new vis.Network(container, data, options);
 }
 </script>
 
