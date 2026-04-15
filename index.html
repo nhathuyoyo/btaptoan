@@ -1,20 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Graph Visualizer</title>
+  <title>Graph Visualizer + Dijkstra</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
-    body {
-      font-family: Arial;
-    }
+    body { font-family: Arial; }
     #mynetwork {
       width: 100%;
       height: 500px;
       border: 1px solid lightgray;
       margin-top: 10px;
-    }
-    textarea {
-      width: 300px;
     }
   </style>
 </head>
@@ -34,71 +29,120 @@
   Đồ thị có hướng
 </label><br><br>
 
+Từ: <input id="start" type="number" value="1">
+Đến: <input id="end" type="number" value="4">
+
 <button onclick="drawGraph()">Vẽ đồ thị</button>
+<button onclick="runDijkstra()">Tìm đường đi ngắn nhất</button>
 
 <div id="mynetwork"></div>
 
 <script>
+let network;
+let edgesData, nodesData;
+let graph = {};
+
 function drawGraph() {
     let lines = document.getElementById("input").value.trim().split("\n");
 
     let nodesSet = new Set();
     let edges = [];
+    graph = {};
 
     lines.forEach(line => {
         let [u, v, w] = line.trim().split(/\s+/).map(Number);
-
-        if (isNaN(u) || isNaN(v)) return;
+        if (isNaN(u) || isNaN(v) || isNaN(w)) return;
 
         nodesSet.add(u);
         nodesSet.add(v);
 
+        if (!graph[u]) graph[u] = [];
+        graph[u].push({ to: v, weight: w });
+
         edges.push({
+            id: u + "-" + v,
             from: u,
             to: v,
-            label: w ? w.toString() : "",
-            font: { align: "middle" }
+            label: w.toString(),
+            color: { color: "#848484" }
         });
     });
 
-    let nodes = Array.from(nodesSet).map(x => ({
-        id: x,
-        label: x.toString()
-    }));
+    let i = 0, n = nodesSet.size, radius = 200;
+    let nodes = Array.from(nodesSet).map(x => {
+        let angle = (2 * Math.PI * i++) / n;
+        return {
+            id: x,
+            label: x.toString(),
+            x: radius * Math.cos(angle),
+            y: radius * Math.sin(angle),
+            color: "#97C2FC"
+        };
+    });
+
+    nodesData = new vis.DataSet(nodes);
+    edgesData = new vis.DataSet(edges);
 
     let container = document.getElementById("mynetwork");
 
-    let data = {
-        nodes: new vis.DataSet(nodes),
-        edges: new vis.DataSet(edges)
-    };
-
-    let isDirected = document.getElementById("directed").checked;
-
     let options = {
-        edges: {
-            arrows: isDirected ? "to" : "",
-            font: {
-                size: 16,
-                color: "#000"
-            },
-            smooth: true
-        },
-        nodes: {
-            shape: "circle",
-            size: 20,
-            font: {
-                size: 18
-            },
-            borderWidth: 2
-        },
-        physics: {
-            enabled: true,
-            stabilization: false
-        }
+        physics: false,
+        interaction: { dragNodes: true },
+        edges: { arrows: document.getElementById("directed").checked ? "to" : "" }
     };
 
-    new vis.Network(container, data, options);
+    network = new vis.Network(container, { nodes: nodesData, edges: edgesData }, options);
+}
+
+function runDijkstra() {
+    let start = Number(document.getElementById("start").value);
+    let end = Number(document.getElementById("end").value);
+
+    let dist = {}, prev = {};
+    let pq = new Set(Object.keys(graph).map(Number));
+
+    Object.keys(graph).forEach(v => dist[v] = Infinity);
+    dist[start] = 0;
+
+    while (pq.size) {
+        let u = [...pq].reduce((a, b) => dist[a] < dist[b] ? a : b);
+        pq.delete(u);
+
+        if (!graph[u]) continue;
+
+        graph[u].forEach(e => {
+            let alt = dist[u] + e.weight;
+            if (alt < (dist[e.to] || Infinity)) {
+                dist[e.to] = alt;
+                prev[e.to] = u;
+                pq.add(e.to);
+            }
+        });
+    }
+
+    // reset màu
+    edgesData.forEach(e => edgesData.update({ id: e.id, color: { color: "#848484" } }));
+    nodesData.forEach(n => nodesData.update({ id: n.id, color: "#97C2FC" }));
+
+    // truy vết đường đi
+    let path = [];
+    let cur = end;
+    while (cur != undefined) {
+        path.push(cur);
+        cur = prev[cur];
+    }
+    path.reverse();
+
+    // tô màu
+    for (let i = 0; i < path.length; i++) {
+        nodesData.update({ id: path[i], color: "green" });
+        if (i > 0) {
+            let id = path[i-1] + "-" + path[i];
+            edgesData.update({ id: id, color: { color: "red" }, width: 3 });
+        }
+    }
+
+    alert("Khoảng cách: " + dist[end]);
 }
 </script>
 
