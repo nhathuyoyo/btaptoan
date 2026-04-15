@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Graph Auto Layout + Drag</title>
+  <title>Graph Editor Auto</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
     body { font-family: Arial; }
@@ -17,7 +17,7 @@
 
 <body>
 
-<h2>Graph (không cần tọa độ)</h2>
+<h2>Graph Editor (không cần nhập tọa độ)</h2>
 
 <p>Nhập cạnh (u v w):</p>
 <textarea id="input" rows="6" cols="40">
@@ -68,14 +68,13 @@ function drawGraph() {
 
     let options = {
         physics: {
-            enabled: true // 🔥 auto layout
+            enabled: true
         }
     };
 
     network = new vis.Network(container, data, options);
 }
 
-// khóa vị trí sau khi bạn kéo xong
 function lockGraph() {
     network.setOptions({
         physics: false
