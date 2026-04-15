@@ -25,12 +25,12 @@
 </textarea><br><br>
 
 <label>
-  <input type="checkbox" id="directed" checked>
+  <input type="checkbox" id="directed">
   Đồ thị có hướng
 </label><br><br>
 
 Từ: <input id="start" type="number" value="1">
-Đến: <input id="end" type="number" value="4">
+Đến: <input id="end" type="number" value="3">
 
 <button onclick="drawGraph()">Vẽ đồ thị</button>
 <button onclick="runDijkstra()">Tìm đường đi ngắn nhất</button>
@@ -49,6 +49,8 @@ function drawGraph() {
     let edges = [];
     graph = {};
 
+    let isDirected = document.getElementById("directed").checked;
+
     lines.forEach(line => {
         let [u, v, w] = line.trim().split(/\s+/).map(Number);
         if (isNaN(u) || isNaN(v) || isNaN(w)) return;
@@ -56,9 +58,16 @@ function drawGraph() {
         nodesSet.add(u);
         nodesSet.add(v);
 
+        // tạo graph
         if (!graph[u]) graph[u] = [];
         graph[u].push({ to: v, weight: w });
 
+        if (!isDirected) {
+            if (!graph[v]) graph[v] = [];
+            graph[v].push({ to: u, weight: w });
+        }
+
+        // tạo edge hiển thị
         edges.push({
             id: u + "-" + v,
             from: u,
@@ -68,6 +77,7 @@ function drawGraph() {
         });
     });
 
+    // layout hình tròn
     let i = 0, n = nodesSet.size, radius = 200;
     let nodes = Array.from(nodesSet).map(x => {
         let angle = (2 * Math.PI * i++) / n;
@@ -88,7 +98,9 @@ function drawGraph() {
     let options = {
         physics: false,
         interaction: { dragNodes: true },
-        edges: { arrows: document.getElementById("directed").checked ? "to" : "" }
+        edges: {
+            arrows: isDirected ? "to" : ""
+        }
     };
 
     network = new vis.Network(container, { nodes: nodesData, edges: edgesData }, options);
@@ -99,9 +111,14 @@ function runDijkstra() {
     let end = Number(document.getElementById("end").value);
 
     let dist = {}, prev = {};
-    let pq = new Set(Object.keys(graph).map(Number));
+    let pq = new Set();
 
-    Object.keys(graph).forEach(v => dist[v] = Infinity);
+    // init
+    Object.keys(graph).forEach(v => {
+        dist[v] = Infinity;
+        pq.add(Number(v));
+    });
+
     dist[start] = 0;
 
     while (pq.size) {
@@ -112,7 +129,7 @@ function runDijkstra() {
 
         graph[u].forEach(e => {
             let alt = dist[u] + e.weight;
-            if (alt < (dist[e.to] || Infinity)) {
+            if (alt < (dist[e.to] ?? Infinity)) {
                 dist[e.to] = alt;
                 prev[e.to] = u;
                 pq.add(e.to);
@@ -121,13 +138,18 @@ function runDijkstra() {
     }
 
     // reset màu
-    edgesData.forEach(e => edgesData.update({ id: e.id, color: { color: "#848484" } }));
+    edgesData.forEach(e => edgesData.update({ id: e.id, color: { color: "#848484" }, width: 1 }));
     nodesData.forEach(n => nodesData.update({ id: n.id, color: "#97C2FC" }));
 
-    // truy vết đường đi
+    if (dist[end] === Infinity) {
+        alert("Không có đường đi!");
+        return;
+    }
+
+    // truy vết
     let path = [];
     let cur = end;
-    while (cur != undefined) {
+    while (cur !== undefined) {
         path.push(cur);
         cur = prev[cur];
     }
@@ -136,9 +158,16 @@ function runDijkstra() {
     // tô màu
     for (let i = 0; i < path.length; i++) {
         nodesData.update({ id: path[i], color: "green" });
+
         if (i > 0) {
-            let id = path[i-1] + "-" + path[i];
-            edgesData.update({ id: id, color: { color: "red" }, width: 3 });
+            let id1 = path[i-1] + "-" + path[i];
+            let id2 = path[i] + "-" + path[i-1];
+
+            if (edgesData.get(id1)) {
+                edgesData.update({ id: id1, color: { color: "red" }, width: 3 });
+            } else if (edgesData.get(id2)) {
+                edgesData.update({ id: id2, color: { color: "red" }, width: 3 });
+            }
         }
     }
 
