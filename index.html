@@ -4,23 +4,35 @@
   <title>Graph Visualizer</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
+    body {
+      font-family: Arial;
+    }
     #mynetwork {
       width: 100%;
       height: 500px;
       border: 1px solid lightgray;
+      margin-top: 10px;
+    }
+    textarea {
+      width: 300px;
     }
   </style>
 </head>
 <body>
 
-<h2>Nhập đồ thị</h2>
+<h2>Nhập đồ thị (u v w)</h2>
 
-<textarea id="input" rows="5" cols="40">
-1 2
-2 3
-3 4
-1 4
+<textarea id="input" rows="6">
+1 2 5
+2 3 10
+3 4 2
+1 4 7
 </textarea><br><br>
+
+<label>
+  <input type="checkbox" id="directed" checked>
+  Đồ thị có hướng
+</label><br><br>
 
 <button onclick="drawGraph()">Vẽ đồ thị</button>
 
@@ -28,19 +40,31 @@
 
 <script>
 function drawGraph() {
-    let input = document.getElementById("input").value.trim().split("\n");
+    let lines = document.getElementById("input").value.trim().split("\n");
 
     let nodesSet = new Set();
     let edges = [];
 
-    input.forEach(line => {
-        let [u, v] = line.split(" ").map(Number);
+    lines.forEach(line => {
+        let [u, v, w] = line.trim().split(/\s+/).map(Number);
+
+        if (isNaN(u) || isNaN(v)) return;
+
         nodesSet.add(u);
         nodesSet.add(v);
-        edges.push({ from: u, to: v });
+
+        edges.push({
+            from: u,
+            to: v,
+            label: w ? w.toString() : "",
+            font: { align: "middle" }
+        });
     });
 
-    let nodes = Array.from(nodesSet).map(x => ({ id: x, label: x.toString() }));
+    let nodes = Array.from(nodesSet).map(x => ({
+        id: x,
+        label: x.toString()
+    }));
 
     let container = document.getElementById("mynetwork");
 
@@ -49,12 +73,28 @@ function drawGraph() {
         edges: new vis.DataSet(edges)
     };
 
+    let isDirected = document.getElementById("directed").checked;
+
     let options = {
         edges: {
-            arrows: "to"
+            arrows: isDirected ? "to" : "",
+            font: {
+                size: 16,
+                color: "#000"
+            },
+            smooth: true
+        },
+        nodes: {
+            shape: "circle",
+            size: 20,
+            font: {
+                size: 18
+            },
+            borderWidth: 2
         },
         physics: {
-            enabled: true
+            enabled: true,
+            stabilization: false
         }
     };
 
