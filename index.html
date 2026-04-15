@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Graph Editor</title>
+  <meta charset="UTF-8">
+  <title>Graph Auto Layout + Drag</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
     body { font-family: Arial; }
@@ -11,33 +12,24 @@
       border: 1px solid gray;
       margin-top: 10px;
     }
-    textarea {
-      width: 300px;
-      height: 120px;
-    }
   </style>
 </head>
+
 <body>
 
-<h2>Graph Editor (tự chỉnh vị trí)</h2>
+<h2>Graph (không cần tọa độ)</h2>
 
-<p>Nhập đỉnh (id x y):</p>
-<textarea id="nodesInput">
-1 0 0
-2 200 0
-3 100 150
-</textarea>
-
-<p>Nhập cạnh (u v):</p>
-<textarea id="edgesInput">
-1 2
-2 3
-1 3
+<p>Nhập cạnh (u v w):</p>
+<textarea id="input" rows="6" cols="40">
+1 2 4
+1 3 2
+2 4 5
+3 4 1
 </textarea>
 
 <br><br>
 <button onclick="drawGraph()">Vẽ đồ thị</button>
-<button onclick="savePositions()">Lưu vị trí</button>
+<button onclick="lockGraph()">Khóa vị trí</button>
 
 <div id="mynetwork"></div>
 
@@ -45,29 +37,27 @@
 let network;
 
 function drawGraph() {
-    let nodeLines = document.getElementById("nodesInput").value.trim().split("\n");
-    let edgeLines = document.getElementById("edgesInput").value.trim().split("\n");
+    let lines = document.getElementById("input").value.trim().split("\n");
 
-    let nodes = [];
+    let nodesSet = new Set();
     let edges = [];
 
-    // parse nodes
-    nodeLines.forEach(line => {
-        let [id, x, y] = line.split(" ").map(Number);
-        nodes.push({
-            id: id,
-            label: id.toString(),
-            x: x,
-            y: y,
-            fixed: false
+    lines.forEach(line => {
+        let [u, v, w] = line.split(" ").map(Number);
+        nodesSet.add(u);
+        nodesSet.add(v);
+
+        edges.push({
+            from: u,
+            to: v,
+            label: w.toString()
         });
     });
 
-    // parse edges
-    edgeLines.forEach(line => {
-        let [u, v] = line.split(" ").map(Number);
-        edges.push({ from: u, to: v });
-    });
+    let nodes = Array.from(nodesSet).map(x => ({
+        id: x,
+        label: x.toString()
+    }));
 
     let container = document.getElementById("mynetwork");
 
@@ -77,23 +67,19 @@ function drawGraph() {
     };
 
     let options = {
-        physics: false // 🔥 giữ nguyên vị trí
+        physics: {
+            enabled: true // 🔥 auto layout
+        }
     };
 
     network = new vis.Network(container, data, options);
 }
 
-// lưu vị trí sau khi kéo
-function savePositions() {
-    let positions = network.getPositions();
-    let result = "";
-
-    for (let id in positions) {
-        let pos = positions[id];
-        result += id + " " + Math.round(pos.x) + " " + Math.round(pos.y) + "\n";
-    }
-
-    alert("Copy vị trí:\n\n" + result);
+// khóa vị trí sau khi bạn kéo xong
+function lockGraph() {
+    network.setOptions({
+        physics: false
+    });
 }
 </script>
 
